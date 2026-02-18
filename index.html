@@ -452,12 +452,82 @@
         }
 
         @media (max-width: 768px) {
-            .container { padding: 16px; }
-            .header { padding: 16px; }
-            .kpi-grid { grid-template-columns: 1fr; }
-            .chart-grid { grid-template-columns: 1fr; }
-            .insights-grid { grid-template-columns: 1fr; }
+            .container { padding: 12px; }
+            .header { padding: 12px 16px; }
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            .header h1 { font-size: 17px; }
+            .header-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .update-status { font-size: 11px; }
+            .refresh-btn { padding: 6px 12px; font-size: 12px; }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-bottom: 16px;
+            }
+            .kpi-card { padding: 14px; border-radius: 12px; }
+            .kpi-label { font-size: 11px; margin-bottom: 4px; }
+            .kpi-value { font-size: 20px; margin-bottom: 4px; }
+            .kpi-sub { font-size: 10px; flex-wrap: wrap; }
+            .kpi-trend { font-size: 10px; padding: 1px 6px; }
+
+            .chart-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            .chart-card { padding: 14px; border-radius: 12px; }
+            .chart-title { font-size: 14px; }
+            .chart-subtitle { font-size: 10px; }
+            .chart-header { margin-bottom: 12px; }
+            .chart-container { height: 240px; }
+            .chart-container.tall { height: 280px; }
+
+            .insights-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .insight-card { padding: 16px; border-radius: 12px; }
+            .insight-icon { width: 36px; height: 36px; font-size: 18px; margin-bottom: 10px; }
+            .insight-title { font-size: 14px; }
+            .insight-desc { font-size: 12px; line-height: 1.5; }
+            .insight-metric { font-size: 12px; }
+            .section-title { font-size: 17px; margin-bottom: 14px; }
+
+            .table-card { padding: 12px; border-radius: 12px; }
+            .data-table { font-size: 11px; }
+            .data-table thead th { padding: 8px 10px; font-size: 11px; }
+            .data-table tbody td { padding: 7px 10px; }
+            .data-table thead th:first-child,
+            .data-table tbody td:first-child {
+                position: sticky;
+                left: 0;
+                background: var(--bg-card);
+                z-index: 2;
+                min-width: 80px;
+                box-shadow: 2px 0 4px rgba(0,0,0,0.3);
+            }
+            .data-table thead th:first-child {
+                z-index: 3;
+                background: #1a2740;
+            }
+
+            .footer { padding: 16px 12px; font-size: 11px; }
+        }
+
+        @media (max-width: 380px) {
+            .kpi-grid { grid-template-columns: 1fr; gap: 8px; }
             .kpi-value { font-size: 22px; }
+            .chart-container { height: 200px; }
+            .chart-container.tall { height: 240px; }
+            .header h1 { font-size: 15px; }
         }
 
         /* Scrollbar */
@@ -936,9 +1006,56 @@
         orangeAlpha: 'rgba(249, 115, 22, 0.15)',
     };
 
+    const isMobile = window.innerWidth <= 768;
+
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.borderColor = 'rgba(51, 65, 85, 0.5)';
     Chart.defaults.font.family = "'Noto Sans KR', sans-serif";
+    Chart.defaults.font.size = isMobile ? 10 : 12;
+
+    function mobileChartOptions() {
+        if (!isMobile) return {};
+        return {
+            plugins: {
+                legend: {
+                    labels: {
+                        padding: 8,
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        font: { size: 10 }
+                    }
+                }
+            },
+            scales: {
+                y: { ticks: { font: { size: 9 }, maxTicksLimit: 6 } },
+                x: { ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 0 } }
+            }
+        };
+    }
+
+    function mobileDoughnutOptions() {
+        if (!isMobile) return {};
+        return {
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 8, boxWidth: 8, boxHeight: 8, font: { size: 10 } }
+                }
+            }
+        };
+    }
+
+    function deepMerge(target, source) {
+        const output = { ...target };
+        for (const key of Object.keys(source)) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                output[key] = deepMerge(target[key] || {}, source[key]);
+            } else {
+                output[key] = source[key];
+            }
+        }
+        return output;
+    }
 
     function destroyCharts() {
         Object.values(chartInstances).forEach(c => c.destroy());
@@ -988,8 +1105,8 @@
                         type: 'line',
                         borderColor: chartColors.green,
                         backgroundColor: chartColors.greenAlpha,
-                        borderWidth: 3,
-                        pointRadius: 5,
+                        borderWidth: isMobile ? 2 : 3,
+                        pointRadius: isMobile ? 3 : 5,
                         pointBackgroundColor: data.operatingProfit.map(v => v >= 0 ? chartColors.green : chartColors.red),
                         pointBorderColor: '#1e293b',
                         pointBorderWidth: 2,
@@ -999,7 +1116,7 @@
                     }
                 ]
             },
-            options: {
+            options: deepMerge({
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
@@ -1009,7 +1126,7 @@
                             label: ctx => ctx.dataset.label + ': ' + formatFullKRW(ctx.raw)
                         }
                     },
-                    legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } }
+                    legend: { position: 'top', labels: { usePointStyle: true, padding: isMobile ? 10 : 20 } }
                 },
                 scales: {
                     y: {
@@ -1022,7 +1139,7 @@
                         grid: { display: false }
                     }
                 }
-            }
+            }, mobileChartOptions())
         });
     }
 
@@ -1043,16 +1160,16 @@
                     data: Object.values(totals),
                     backgroundColor: [chartColors.blue, chartColors.purple, chartColors.cyan, chartColors.yellow],
                     borderColor: '#1e293b',
-                    borderWidth: 3,
+                    borderWidth: isMobile ? 2 : 3,
                     hoverOffset: 8
                 }]
             },
-            options: {
+            options: deepMerge({
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: '60%',
                 plugins: {
-                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } },
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: isMobile ? 8 : 16 } },
                     tooltip: {
                         callbacks: {
                             label: ctx => {
@@ -1063,7 +1180,7 @@
                         }
                     }
                 }
-            }
+            }, mobileDoughnutOptions())
         });
     }
 
@@ -1089,16 +1206,16 @@
                     data: items.map(i => i.data),
                     backgroundColor: items.map(i => i.color),
                     borderColor: '#1e293b',
-                    borderWidth: 3,
+                    borderWidth: isMobile ? 2 : 3,
                     hoverOffset: 8
                 }]
             },
-            options: {
+            options: deepMerge({
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: '60%',
                 plugins: {
-                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } },
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: isMobile ? 8 : 16 } },
                     tooltip: {
                         callbacks: {
                             label: ctx => {
@@ -1109,7 +1226,7 @@
                         }
                     }
                 }
-            }
+            }, mobileDoughnutOptions())
         });
     }
 
@@ -1132,7 +1249,7 @@
                     borderRadius: 6
                 }]
             },
-            options: {
+            options: deepMerge({
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
@@ -1150,29 +1267,30 @@
                     },
                     x: { grid: { display: false } }
                 }
-            }
+            }, mobileChartOptions())
         });
     }
 
     function renderChannelTrendChart(data) {
         const ctx = document.getElementById('channelTrendChart').getContext('2d');
+        const pr = isMobile ? 2 : 3;
         chartInstances.channelTrend = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: data.months,
                 datasets: [
-                    { label: '페이앱', data: data.revenue.payapp, borderColor: chartColors.blue, backgroundColor: chartColors.blueAlpha, fill: true, tension: 0.3, pointRadius: 3 },
-                    { label: 'KCP/토스페이', data: data.revenue.kcp_toss, borderColor: chartColors.purple, backgroundColor: chartColors.purpleAlpha, fill: true, tension: 0.3, pointRadius: 3 },
-                    { label: '다날', data: data.revenue.danal, borderColor: chartColors.cyan, backgroundColor: chartColors.cyanAlpha, fill: true, tension: 0.3, pointRadius: 3 },
-                    { label: '기타', data: data.revenue.etc, borderColor: chartColors.yellow, backgroundColor: chartColors.yellowAlpha, fill: true, tension: 0.3, pointRadius: 3 },
+                    { label: '페이앱', data: data.revenue.payapp, borderColor: chartColors.blue, backgroundColor: chartColors.blueAlpha, fill: true, tension: 0.3, pointRadius: pr, borderWidth: isMobile ? 1.5 : 2 },
+                    { label: 'KCP/토스페이', data: data.revenue.kcp_toss, borderColor: chartColors.purple, backgroundColor: chartColors.purpleAlpha, fill: true, tension: 0.3, pointRadius: pr, borderWidth: isMobile ? 1.5 : 2 },
+                    { label: '다날', data: data.revenue.danal, borderColor: chartColors.cyan, backgroundColor: chartColors.cyanAlpha, fill: true, tension: 0.3, pointRadius: pr, borderWidth: isMobile ? 1.5 : 2 },
+                    { label: '기타', data: data.revenue.etc, borderColor: chartColors.yellow, backgroundColor: chartColors.yellowAlpha, fill: true, tension: 0.3, pointRadius: pr, borderWidth: isMobile ? 1.5 : 2 },
                 ]
             },
-            options: {
+            options: deepMerge({
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                    legend: { position: 'top', labels: { usePointStyle: true, padding: isMobile ? 8 : 16 } },
                     tooltip: {
                         callbacks: { label: ctx => ctx.dataset.label + ': ' + formatKRW(ctx.raw) }
                     }
@@ -1181,31 +1299,33 @@
                     y: { ticks: { callback: v => formatKRW(v) }, grid: { color: 'rgba(51, 65, 85, 0.3)' }, stacked: false },
                     x: { grid: { display: false } }
                 }
-            }
+            }, mobileChartOptions())
         });
     }
 
     function renderExpenseTrendChart(data) {
         const ctx = document.getElementById('expenseTrendChart').getContext('2d');
+        const bw = isMobile ? 1.5 : 2;
+        const pr = isMobile ? 2 : 3;
         chartInstances.expenseTrend = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: data.months,
                 datasets: [
-                    { label: '급여', data: data.expenses.salary, borderColor: chartColors.blue, borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                    { label: '프리랜서', data: data.expenses.freelancer, borderColor: chartColors.purple, borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                    { label: '지급수수료', data: data.expenses.fees, borderColor: chartColors.cyan, borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                    { label: '광고선전비', data: data.expenses.advertising, borderColor: chartColors.yellow, borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                    { label: '인센티브', data: data.expenses.incentive, borderColor: chartColors.green, borderWidth: 2, tension: 0.3, pointRadius: 3 },
-                    { label: '임차료', data: data.expenses.rent, borderColor: chartColors.pink, borderWidth: 2, tension: 0.3, pointRadius: 3 },
+                    { label: '급여', data: data.expenses.salary, borderColor: chartColors.blue, borderWidth: bw, tension: 0.3, pointRadius: pr },
+                    { label: '프리랜서', data: data.expenses.freelancer, borderColor: chartColors.purple, borderWidth: bw, tension: 0.3, pointRadius: pr },
+                    { label: '지급수수료', data: data.expenses.fees, borderColor: chartColors.cyan, borderWidth: bw, tension: 0.3, pointRadius: pr },
+                    { label: '광고선전비', data: data.expenses.advertising, borderColor: chartColors.yellow, borderWidth: bw, tension: 0.3, pointRadius: pr },
+                    { label: '인센티브', data: data.expenses.incentive, borderColor: chartColors.green, borderWidth: bw, tension: 0.3, pointRadius: pr },
+                    { label: '임차료', data: data.expenses.rent, borderColor: chartColors.pink, borderWidth: bw, tension: 0.3, pointRadius: pr },
                 ]
             },
-            options: {
+            options: deepMerge({
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                    legend: { position: 'top', labels: { usePointStyle: true, padding: isMobile ? 8 : 16 } },
                     tooltip: {
                         callbacks: { label: ctx => ctx.dataset.label + ': ' + formatFullKRW(ctx.raw) }
                     }
@@ -1214,7 +1334,7 @@
                     y: { ticks: { callback: v => formatKRW(v) }, grid: { color: 'rgba(51, 65, 85, 0.3)' } },
                     x: { grid: { display: false } }
                 }
-            }
+            }, mobileChartOptions())
         });
     }
 
@@ -1232,24 +1352,24 @@
             data: {
                 labels: data.months,
                 datasets: [
-                    { label: '누적 매출', data: cumRev, borderColor: chartColors.blue, backgroundColor: chartColors.blueAlpha, fill: true, tension: 0.3, borderWidth: 2 },
-                    { label: '누적 비용', data: cumExp, borderColor: chartColors.red, backgroundColor: chartColors.redAlpha, fill: true, tension: 0.3, borderWidth: 2 },
-                    { label: '누적 이익', data: cumProfit, borderColor: chartColors.green, backgroundColor: chartColors.greenAlpha, fill: true, tension: 0.3, borderWidth: 2 },
+                    { label: '누적 매출', data: cumRev, borderColor: chartColors.blue, backgroundColor: chartColors.blueAlpha, fill: true, tension: 0.3, borderWidth: isMobile ? 1.5 : 2 },
+                    { label: '누적 비용', data: cumExp, borderColor: chartColors.red, backgroundColor: chartColors.redAlpha, fill: true, tension: 0.3, borderWidth: isMobile ? 1.5 : 2 },
+                    { label: '누적 이익', data: cumProfit, borderColor: chartColors.green, backgroundColor: chartColors.greenAlpha, fill: true, tension: 0.3, borderWidth: isMobile ? 1.5 : 2 },
                 ]
             },
-            options: {
+            options: deepMerge({
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                    legend: { position: 'top', labels: { usePointStyle: true, padding: isMobile ? 8 : 16 } },
                     tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + formatKRW(ctx.raw) } }
                 },
                 scales: {
                     y: { ticks: { callback: v => formatKRW(v) }, grid: { color: 'rgba(51, 65, 85, 0.3)' } },
                     x: { grid: { display: false } }
                 }
-            }
+            }, mobileChartOptions())
         });
     }
 
@@ -1268,23 +1388,23 @@
             data: {
                 labels: data.months,
                 datasets: [
-                    { label: '인건비율 (급여+인센+프리)', data: laborRatios, borderColor: chartColors.purple, backgroundColor: chartColors.purpleAlpha, fill: true, tension: 0.3, borderWidth: 2 },
-                    { label: '광고비율', data: adRatios, borderColor: chartColors.yellow, backgroundColor: chartColors.yellowAlpha, fill: true, tension: 0.3, borderWidth: 2 }
+                    { label: '인건비율 (급여+인센+프리)', data: laborRatios, borderColor: chartColors.purple, backgroundColor: chartColors.purpleAlpha, fill: true, tension: 0.3, borderWidth: isMobile ? 1.5 : 2 },
+                    { label: '광고비율', data: adRatios, borderColor: chartColors.yellow, backgroundColor: chartColors.yellowAlpha, fill: true, tension: 0.3, borderWidth: isMobile ? 1.5 : 2 }
                 ]
             },
-            options: {
+            options: deepMerge({
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                    legend: { position: 'top', labels: { usePointStyle: true, padding: isMobile ? 8 : 16 } },
                     tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%' } }
                 },
                 scales: {
                     y: { ticks: { callback: v => v + '%' }, grid: { color: 'rgba(51, 65, 85, 0.3)' } },
                     x: { grid: { display: false } }
                 }
-            }
+            }, mobileChartOptions())
         });
     }
 
